@@ -1,0 +1,18 @@
+dufs_version: 'latest'
+
+dufs_user: 'nobody'
+dufs_group: 'nogroup'
+dufs_umask: '0002'
+
+dufs_serve_path: '/srv/dufs'
+
+dufs_bind: '0.0.0.0'
+dufs_port: '5000'
+dufs_auth: '@/'
+dufs_allow_all: false
+dufs_allow_upload: true
+dufs_allow_delete: true
+dufs_allow_search: true
+dufs_allow_symlink: false
+dufs_allow_archive: true
+dufs_enable_cors: true

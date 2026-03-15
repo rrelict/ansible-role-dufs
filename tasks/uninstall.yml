@@ -1,0 +1,15 @@
+- name: Stop and disable dufs service
+  ansible.builtin.systemd:
+    name: dufs
+    state: stopped
+    enabled: false
+
+- name: Remove dufs binary
+  ansible.builtin.file:
+    path: /usr/local/bin/dufs
+    state: absent
+
+- name: Remove systemd service file
+  ansible.builtin.file:
+    path: /etc/systemd/system/dufs.service
+    state: absent

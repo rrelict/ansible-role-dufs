@@ -1,0 +1,26 @@
+[Unit]
+Description=Dufs WebDAV Server
+After=network.target
+
+[Service]
+ExecStart=/usr/local/bin/dufs \
+    --bind {{ dufs_bind }} \
+    --port {{ dufs_port }} \
+    --auth "{{ dufs_auth }}" \
+    {% if dufs_allow_all %}--allow-all{% endif %} \
+    {% if dufs_allow_upload %}--allow-upload{% endif %} \
+    {% if dufs_allow_delete %}--allow-delete{% endif %} \
+    {% if dufs_allow_search %}--allow-search{% endif %} \
+    {% if dufs_allow_symlink %}--allow-symlink{% endif %} \
+    {% if dufs_allow_archive %}--allow-archive{% endif %} \
+    {% if dufs_enable_cors %}--enable-cors{% endif %}
+
+Restart=on-failure
+RestartSec=5s
+User={{ dufs_user }}
+Group={{ dufs_group }}
+UMask={{ dufs_umask }}
+WorkingDirectory={{ dufs_serve_path }}
+
+[Install]
+WantedBy=multi-user.target

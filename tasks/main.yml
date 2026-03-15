@@ -1,0 +1,89 @@
+---
+# TODO: Split htis file to install and configure ones.
+- name: Ensure dependencies are installed
+  ansible.builtin.apt:
+    name: curl
+    state: present
+    update_cache: true
+
+- name: Get the latest dufs version (if not pinned)
+  ansible.builtin.uri:
+    url: "https://api.github.com/repos/sigoden/dufs/releases/latest"
+    return_content: true
+  when: dufs_version == "latest"
+  register: dufs_release
+
+- name: Set dufs version (if latest)
+  ansible.builtin.set_fact:
+    dufs_version: "{{ dufs_release.json.tag_name | regex_replace('^v', '') }}"
+  when: dufs_version == "latest"
+
+- name: Determine architecture
+  ansible.builtin.set_fact:
+    dufs_arch: "{{ ansible_architecture | replace('x86_64', 'x86_64-unknown-linux-musl') | replace('aarch64', 'aarch64-unknown-linux-musl') | replace('armv7l', 'armv7-unknown-linux-musleabihf') }}"
+
+- name: Check if dufs is already installed
+  ansible.builtin.command: "/usr/local/bin/dufs -V"
+  register: dufs_current_version
+  ignore_errors: true
+  changed_when: false
+
+- name: Set installed version fact
+  ansible.builtin.set_fact:
+    dufs_installed_version: "{{ dufs_current_version.stdout | regex_search('[0-9]+\\.[0-9]+\\.[0-9]+') | default('none', true) }}"
+
+- name: Compare installed version with desired version
+  ansible.builtin.debug:
+    msg: "Installed: {{ dufs_installed_version }}, Desired: {{ dufs_version }}"
+
+- name: Download dufs binary if version mismatch
+  ansible.builtin.get_url:
+    url: "https://github.com/sigoden/dufs/releases/download/v{{ dufs_version }}/dufs-v{{ dufs_version }}-{{ dufs_arch }}.tar.gz"
+    dest: "/tmp/dufs.tar.gz"
+    mode: '0644'
+  when: dufs_version != dufs_installed_version
+
+- name: Extract dufs binary if version mismatch
+  ansible.builtin.unarchive:
+    src: "/tmp/dufs.tar.gz"
+    dest: "/usr/local/bin/"
+    remote_src: true
+    # extra_opts:
+    #   - --strip-components=1
+  when: dufs_version != dufs_installed_version
+  notify: Restart dufs
+
+
+- name: Ensure dufs is executable
+  ansible.builtin.file:
+    path: "/usr/local/bin/dufs"
+    owner: 'root'
+    group: 'root'
+    mode: '0755'
+
+- name: Ensure dufs user directory exists
+  ansible.builtin.file:
+    path: "{{ dufs_serve_path }}{{ dufs_user_folder }}"
+    state: directory
+    owner: '{{ dufs_user }}'
+    group: '{{ dufs_group }}'
+    mode: '0755'
+
+- name: Create dufs systemd service
+  ansible.builtin.template:
+    src: dufs.service.j2
+    dest: /etc/systemd/system/dufs.service
+    owner: 'root'
+    group: 'root'
+    mode: '0644'
+  notify: Restart dufs
+
+- name: Reload systemd daemon
+  ansible.builtin.systemd:
+    daemon_reload: true
+
+- name: Enable and start dufs service
+  ansible.builtin.systemd:
+    name: dufs
+    enabled: true
+    state: started

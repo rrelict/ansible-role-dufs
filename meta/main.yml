@@ -1,0 +1,15 @@
+galaxy_info:
+  role_name: dufs
+  author: rrelict
+  description: Install and configure `dufs` WebDAV server on Debian.
+  license: MIT
+  min_ansible_version: "2.9"
+  platforms:
+    - name: Debian
+      versions:
+        - all
+  galaxy_tags:
+    - webdav
+    - file-server
+    - dufs
+dependencies: []
